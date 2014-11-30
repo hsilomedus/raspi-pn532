@@ -94,7 +94,9 @@ public class PN532I2C implements IPN532Interface {
 //      i2cDevice.write(DEVICE_ADDRESS, cmdlen_1);
       toSend.add(cmdlen_1);
       
-      byte sum = 0;
+      toSend.add(PN532_HOSTTOPN532);
+      
+      byte sum = PN532_HOSTTOPN532;
       
 //      System.out.println("pn532i2c.writeCommand send header");
       for (int i = 0; i < header.length; i++) {
