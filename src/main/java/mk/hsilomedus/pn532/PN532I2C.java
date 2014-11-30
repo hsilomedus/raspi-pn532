@@ -10,6 +10,8 @@
 package mk.hsilomedus.pn532;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
@@ -66,44 +68,61 @@ public class PN532I2C implements IPN532Interface {
   public CommandStatus writeCommand(byte[] header, byte[] body) throws InterruptedException {
     System.out.println("pn532i2c.writeCommand(header:" + getByteString(header) + ", body: " + getByteString(body)+")");
     
+    List<Byte> toSend = new ArrayList<Byte>();
+    
     command = header[0];
     try {
-      System.out.println("pn532i2c.writeCommand send preamble");
-      i2cDevice.write(DEVICE_ADDRESS, PN532_PREAMBLE);
-      System.out.println("pn532i2c.writeCommand send startcode1");
-      i2cDevice.write(DEVICE_ADDRESS, PN532_STARTCODE1);
-      System.out.println("pn532i2c.writeCommand send startcode2");
-      i2cDevice.write(DEVICE_ADDRESS, PN532_STARTCODE2);
+//      System.out.println("pn532i2c.writeCommand send preamble");
+      toSend.add(PN532_PREAMBLE);
+//      i2cDevice.write(DEVICE_ADDRESS, PN532_PREAMBLE);
+//      System.out.println("pn532i2c.writeCommand send startcode1");
+      toSend.add(PN532_STARTCODE1);
+//      i2cDevice.write(DEVICE_ADDRESS, PN532_STARTCODE1);
+//      System.out.println("pn532i2c.writeCommand send startcode2");
+      toSend.add(PN532_STARTCODE2);
+//      i2cDevice.write(DEVICE_ADDRESS, PN532_STARTCODE2);
       
       byte cmd_len = (byte) header.length;
       cmd_len += (byte) body.length;
       cmd_len++;
       byte cmdlen_1 = (byte) (~cmd_len + 1);
       
-      System.out.println("pn532i2c.writeCommand send command length");
-      i2cDevice.write(DEVICE_ADDRESS, cmd_len); 
-      System.out.println("pn532i2c.writeCommand send command lenght checksum");
-      i2cDevice.write(DEVICE_ADDRESS, cmdlen_1); 
+//      System.out.println("pn532i2c.writeCommand send command length");
+//      i2cDevice.write(DEVICE_ADDRESS, cmd_len);
+      toSend.add(cmd_len);
+//      System.out.println("pn532i2c.writeCommand send command lenght checksum");
+//      i2cDevice.write(DEVICE_ADDRESS, cmdlen_1);
+      toSend.add(cmdlen_1);
       
       byte sum = 0;
       
-      System.out.println("pn532i2c.writeCommand send header");
+//      System.out.println("pn532i2c.writeCommand send header");
       for (int i = 0; i < header.length; i++) {
-        i2cDevice.write(DEVICE_ADDRESS, header[i]);
+//        i2cDevice.write(DEVICE_ADDRESS, header[i]);
+        toSend.add(header[i]);
         sum += header[i];
       }
       
-      System.out.println("pn532i2c.writeCommand send body");
+//      System.out.println("pn532i2c.writeCommand send body");
       for (int i = 0; i < body.length; i++) {
-        i2cDevice.write(DEVICE_ADDRESS, body[i]);
+//        i2cDevice.write(DEVICE_ADDRESS, body[i]);
+        toSend.add(body[i]);
         sum += body[i];
       }
       
       byte checksum = (byte) (~sum + 1);
-      System.out.println("pn532i2c.writeCommand send checksum");
-      i2cDevice.write(DEVICE_ADDRESS, checksum);
-      System.out.println("pn532i2c.writeCommand send postamle");
-      i2cDevice.write(DEVICE_ADDRESS, PN532_POSTAMBLE);
+//      System.out.println("pn532i2c.writeCommand send checksum");
+//      i2cDevice.write(DEVICE_ADDRESS, checksum);
+      toSend.add(checksum);
+//      System.out.println("pn532i2c.writeCommand send postamle");
+//      i2cDevice.write(DEVICE_ADDRESS, PN532_POSTAMBLE);
+      toSend.add(PN532_POSTAMBLE);
+      byte[] bytesToSend = new byte[toSend.size()];
+      for (int i = 0; i < bytesToSend.length; i++) {
+        bytesToSend[i] = toSend.get(i);
+      }
+      System.out.println("pn532i2c.writeCommand sending " + getByteString(bytesToSend));
+      i2cDevice.write(DEVICE_ADDRESS, bytesToSend, 0, bytesToSend.length);
     
     } catch (IOException e) {
       System.out.println("pn532i2c.writeCommand exception occured: " + e.getMessage());
@@ -112,7 +131,7 @@ public class PN532I2C implements IPN532Interface {
     
     System.out.println("pn532i2c.writeCommand transferring to waitForAck())");
     
-    return waitForAck(1000);
+    return waitForAck(5000);
     
   }
   
