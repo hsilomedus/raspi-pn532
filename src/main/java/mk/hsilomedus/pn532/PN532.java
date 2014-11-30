@@ -17,14 +17,6 @@ public class PN532 {
 	public void begin() {
 		medium.begin();
 		medium.wakeup();
-//		byte[] command = new byte[1];
-//		command[0] = PN532_COMMAND_GETFIRMWAREVERSION;
-//		try {
-//			medium.writeCommand(command);
-//		} catch (InterruptedException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
 	}
 
 	public long getFirmwareVersion() throws InterruptedException {
@@ -38,10 +30,7 @@ public class PN532 {
 		}
 
 		// read data packet
-//		int status = medium.readResponse(pn532_packetbuffer,
-//				pn532_packetbuffer.length);
-		int status = medium.readResponse(pn532_packetbuffer,
-				12);
+		int status = medium.readResponse(pn532_packetbuffer, 12);
 		if (0 > status) {
 			return 0;
 		}
@@ -70,10 +59,7 @@ public class PN532 {
 			return false;
 		}
 
-//		return 0 < medium.readResponse(pn532_packetbuffer,
-//				pn532_packetbuffer.length);
-		return 0 < medium.readResponse(pn532_packetbuffer,
-				8);
+		return 0 < medium.readResponse(pn532_packetbuffer, 8);
 	}
 
 	public int readPassiveTargetID(byte cardbaudrate, byte[] buffer) throws InterruptedException {
