@@ -144,12 +144,15 @@ public class PN532I2C implements IPN532Interface {
     byte PN532_ACK[] = new byte[] { 0, 0, (byte) 0xFF, 0, (byte) 0xFF, 0 };
 
     int timer = 0;
-    
+    String message = "";
     while (true) {
       try {
-        i2cDevice.read(DEVICE_ADDRESS, ackbuff, 0, 7);
+        int read = i2cDevice.read(DEVICE_ADDRESS, ackbuff, 0, 7);
+        if (read >0) {
+          System.out.println("pn532i2c.waitForAck Read " + read + " bytes.");
+        }
       } catch (IOException e) {
-        // Nothing, timeout will occur if an error has happened.
+        message = e.getMessage();
       }
       
       if ((ackbuff[0] & 1) > 0) {
@@ -159,7 +162,7 @@ public class PN532I2C implements IPN532Interface {
       if (timeout != 0) {
         timer += 10;
         if (timer > timeout) {
-          System.out.println("pn532i2c.waitForAck timeout occured.");
+          System.out.println("pn532i2c.waitForAck timeout occured: " + message);
           return CommandStatus.TIMEOUT;
         }
       }
