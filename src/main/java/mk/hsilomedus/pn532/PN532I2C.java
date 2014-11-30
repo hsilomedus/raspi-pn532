@@ -32,7 +32,7 @@ public class PN532I2C implements IPN532Interface {
   
   byte command;
   
-  private static final int DEVICE_ADDRESS = 0x24;
+  private static final int DEVICE_ADDRESS = 0x48;
 
   @Override
   public void begin() {
@@ -68,8 +68,11 @@ public class PN532I2C implements IPN532Interface {
     
     command = header[0];
     try {
-      i2cDevice.write(PN532_PREAMBLE);    
+      System.out.println("pn532i2c.writeCommand send preamble");
+      i2cDevice.write(PN532_PREAMBLE);
+      System.out.println("pn532i2c.writeCommand send startcode1");
       i2cDevice.write(PN532_STARTCODE1);
+      System.out.println("pn532i2c.writeCommand send startcode2");
       i2cDevice.write(PN532_STARTCODE2);
       
       byte cmd_len = (byte) header.length;
@@ -77,23 +80,29 @@ public class PN532I2C implements IPN532Interface {
       cmd_len++;
       byte cmdlen_1 = (byte) (~cmd_len + 1);
       
+      System.out.println("pn532i2c.writeCommand send command length");
       i2cDevice.write(cmd_len); 
+      System.out.println("pn532i2c.writeCommand send command lenght checksum");
       i2cDevice.write(cmdlen_1); 
       
       byte sum = 0;
       
+      System.out.println("pn532i2c.writeCommand send header");
       for (int i = 0; i < header.length; i++) {
         i2cDevice.write(header[i]);
         sum += header[i];
       }
       
+      System.out.println("pn532i2c.writeCommand send body");
       for (int i = 0; i < body.length; i++) {
         i2cDevice.write(body[i]);
         sum += body[i];
       }
       
       byte checksum = (byte) (~sum + 1);
+      System.out.println("pn532i2c.writeCommand send checksum");
       i2cDevice.write(checksum);
+      System.out.println("pn532i2c.writeCommand send postamle");
       i2cDevice.write(PN532_POSTAMBLE);
     
     } catch (IOException e) {
