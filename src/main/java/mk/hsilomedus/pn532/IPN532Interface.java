@@ -16,5 +16,7 @@ public interface IPN532Interface {
 
 	public abstract int readResponse(byte[] buffer, int expectedLength)
 			throws InterruptedException;
+	
+	public abstract int getOffsetBytes();
 
 }

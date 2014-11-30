@@ -148,9 +148,9 @@ public class PN532I2C implements IPN532Interface {
     while (true) {
       try {
         int read = i2cDevice.read(ackbuff, 0, 7);
-        if (read >0) {
-          System.out.println("pn532i2c.waitForAck Read " + read + " bytes.");
-        }
+//        if (read >0) {
+//          System.out.println("pn532i2c.waitForAck Read " + read + " bytes.");
+//        }
       } catch (IOException e) {
         message = e.getMessage();
       }
@@ -197,9 +197,9 @@ public class PN532I2C implements IPN532Interface {
     while (true) {
       try {
         int read = i2cDevice.read(response, 0, expectedLength + 2);
-        if (read > 0) {
-          System.out.println("pn532i2c.waitForAck Read " + read + " bytes.");
-        }
+//        if (read > 0) {
+//          System.out.println("pn532i2c.waitForAck Read " + read + " bytes.");
+//        }
       } catch (IOException e) {
         // Nothing, timeout will occur if an error has happened.
       }
@@ -282,6 +282,11 @@ public class PN532I2C implements IPN532Interface {
   @Override
   public int readResponse(byte[] buffer, int expectedLength) throws InterruptedException {
     return readResponse(buffer, expectedLength, 1000);
+  }
+  
+  @Override
+  public int getOffsetBytes() {
+    return 0;
   }
   
   

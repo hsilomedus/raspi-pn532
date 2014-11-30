@@ -251,5 +251,10 @@ public class PN532Serial implements IPN532Interface {
 	int receive(byte[] buffer, int expectedLength) throws InterruptedException {
 		return receive(buffer, expectedLength, 2000);
 	}
+	
+	@Override
+	public int getOffsetBytes() {
+	  return 7; //Don't know if valid
+	}
 
 }

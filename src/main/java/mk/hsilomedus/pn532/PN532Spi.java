@@ -158,6 +158,11 @@ public class PN532Spi implements IPN532Interface {
 		}
 		return CommandStatus.OK; // ack'd command
 	}
+	
+	@Override
+	public int getOffsetBytes() {
+	  return 7;
+	}
 
 	private byte readSpiStatus() throws InterruptedException {
 		// System.out.println("Medium.readSpiStatus()");
@@ -222,5 +227,6 @@ public class PN532Spi implements IPN532Interface {
 		}
 		return output;
 	}
+	
 
 }

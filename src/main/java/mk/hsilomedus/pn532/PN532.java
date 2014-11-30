@@ -46,7 +46,7 @@ public class PN532 {
 			return 0;
 		}
 		
-		int offset = 0;
+		int offset = medium.getOffsetBytes();
 
 		response = pn532_packetbuffer[offset + 0];
 		response <<= 8;
@@ -102,7 +102,7 @@ public class PN532 {
 		 * NFCID Length b6..NFCIDLen NFCID
 		 */
 		
-		int offset = 0;
+		int offset = medium.getOffsetBytes();
 
 		if (pn532_packetbuffer[offset + 0] != 1) {
 			return -1;
