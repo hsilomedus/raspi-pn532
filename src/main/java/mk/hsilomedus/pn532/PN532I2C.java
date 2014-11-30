@@ -150,7 +150,7 @@ public class PN532I2C implements IPN532Interface {
 
   @Override
   public CommandStatus writeCommand(byte[] header) throws InterruptedException {
-    return writeCommand(header, null);
+    return writeCommand(header, new byte[0]);
   }
 
   @Override
