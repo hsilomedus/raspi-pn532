@@ -4,7 +4,8 @@ public class Main {
 	static final byte PN532_MIFARE_ISO14443A = 0x00;
 
 	public static void main(String[] args) throws InterruptedException {
-		IPN532Interface pn532Interface = new PN532Spi();
+//		IPN532Interface pn532Interface = new PN532Spi();
+	  IPN532Interface pn532Interface = new PN532I2C();
 		PN532 nfc = new PN532(pn532Interface);
 
 		// Start
