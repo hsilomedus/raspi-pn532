@@ -147,7 +147,7 @@ public class PN532I2C implements IPN532Interface {
     String message = "";
     while (true) {
       try {
-        int read = i2cDevice.read(DEVICE_ADDRESS, ackbuff, 0, 7);
+        int read = i2cDevice.read(ackbuff, 0, 7);
         if (read >0) {
           System.out.println("pn532i2c.waitForAck Read " + read + " bytes.");
         }
@@ -196,7 +196,7 @@ public class PN532I2C implements IPN532Interface {
     
     while (true) {
       try {
-        i2cDevice.read(DEVICE_ADDRESS, response, 0, expectedLength + 2);
+        i2cDevice.read(response, 0, expectedLength + 2);
       } catch (IOException e) {
         // Nothing, timeout will occur if an error has happened.
       }
