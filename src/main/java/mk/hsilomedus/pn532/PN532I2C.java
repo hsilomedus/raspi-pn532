@@ -32,7 +32,7 @@ public class PN532I2C implements IPN532Interface {
   
   byte command;
   
-  private static final int DEVICE_ADDRESS = 0x48;
+  private static final int DEVICE_ADDRESS = 0x24;
 
   @Override
   public void begin() {
@@ -69,11 +69,11 @@ public class PN532I2C implements IPN532Interface {
     command = header[0];
     try {
       System.out.println("pn532i2c.writeCommand send preamble");
-      i2cDevice.write(PN532_PREAMBLE);
+      i2cDevice.write(DEVICE_ADDRESS, PN532_PREAMBLE);
       System.out.println("pn532i2c.writeCommand send startcode1");
-      i2cDevice.write(PN532_STARTCODE1);
+      i2cDevice.write(DEVICE_ADDRESS, PN532_STARTCODE1);
       System.out.println("pn532i2c.writeCommand send startcode2");
-      i2cDevice.write(PN532_STARTCODE2);
+      i2cDevice.write(DEVICE_ADDRESS, PN532_STARTCODE2);
       
       byte cmd_len = (byte) header.length;
       cmd_len += (byte) body.length;
@@ -81,29 +81,29 @@ public class PN532I2C implements IPN532Interface {
       byte cmdlen_1 = (byte) (~cmd_len + 1);
       
       System.out.println("pn532i2c.writeCommand send command length");
-      i2cDevice.write(cmd_len); 
+      i2cDevice.write(DEVICE_ADDRESS, cmd_len); 
       System.out.println("pn532i2c.writeCommand send command lenght checksum");
-      i2cDevice.write(cmdlen_1); 
+      i2cDevice.write(DEVICE_ADDRESS, cmdlen_1); 
       
       byte sum = 0;
       
       System.out.println("pn532i2c.writeCommand send header");
       for (int i = 0; i < header.length; i++) {
-        i2cDevice.write(header[i]);
+        i2cDevice.write(DEVICE_ADDRESS, header[i]);
         sum += header[i];
       }
       
       System.out.println("pn532i2c.writeCommand send body");
       for (int i = 0; i < body.length; i++) {
-        i2cDevice.write(body[i]);
+        i2cDevice.write(DEVICE_ADDRESS, body[i]);
         sum += body[i];
       }
       
       byte checksum = (byte) (~sum + 1);
       System.out.println("pn532i2c.writeCommand send checksum");
-      i2cDevice.write(checksum);
+      i2cDevice.write(DEVICE_ADDRESS, checksum);
       System.out.println("pn532i2c.writeCommand send postamle");
-      i2cDevice.write(PN532_POSTAMBLE);
+      i2cDevice.write(DEVICE_ADDRESS, PN532_POSTAMBLE);
     
     } catch (IOException e) {
       System.out.println("pn532i2c.writeCommand exception occured: " + e.getMessage());
@@ -126,7 +126,7 @@ public class PN532I2C implements IPN532Interface {
     
     while (true) {
       try {
-        i2cDevice.read(ackbuff, 0, 7);
+        i2cDevice.read(DEVICE_ADDRESS, ackbuff, 0, 7);
       } catch (IOException e) {
         // Nothing, timeout will occur if an error has happened.
       }
@@ -172,7 +172,7 @@ public class PN532I2C implements IPN532Interface {
     
     while (true) {
       try {
-        i2cDevice.read(response, 0, expectedLength + 2);
+        i2cDevice.read(DEVICE_ADDRESS, response, 0, expectedLength + 2);
       } catch (IOException e) {
         // Nothing, timeout will occur if an error has happened.
       }
