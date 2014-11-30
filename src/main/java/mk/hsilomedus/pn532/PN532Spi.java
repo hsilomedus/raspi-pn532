@@ -161,7 +161,7 @@ public class PN532Spi implements IPN532Interface {
 	
 	@Override
 	public int getOffsetBytes() {
-	  return 7;
+	  return 6;
 	}
 
 	private byte readSpiStatus() throws InterruptedException {
