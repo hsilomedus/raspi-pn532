@@ -12,13 +12,7 @@ public class PN532Spi implements IPN532Interface {
 	static final byte PN532_SPI_STATREAD = 0x02;
 	static final byte PN532_SPI_DATAWRITE = 0x01;
 	static final byte PN532_SPI_DATAREAD = 0x03;
-
-	static final byte PN532_PREAMBLE = 0x00;
-	static final byte PN532_STARTCODE1 = 0x00;
-	static final byte PN532_STARTCODE2 = (byte) 0xFF;
-	static final byte PN532_POSTAMBLE = 0x00;
-	static final byte PN532_HOSTTOPN532 = (byte) 0xD4;
-
+	
 	static final int OUTPUT = 1;
 
 	static final int LOW = 0;
@@ -26,19 +20,23 @@ public class PN532Spi implements IPN532Interface {
 
 	static final int _cs = 10;
 	static final int rst = 0;
+	
+	private byte command;
+	
+	private boolean debug = false;
 
 	@Override
 	public void begin() {
-		System.out.println("Beginning SPI.");
+		log("Beginning SPI.");
 
 		int j = Gpio.wiringPiSetup();
-		System.out.println("Wiringpisetup is " + j);
+		log("Wiringpisetup is " + j);
 		int fd = Spi.wiringPiSPISetup(SPICHANNEL, SPISPEED);
-		System.out.println("Wiringpispisetup is " + fd);
+		log("Wiringpispisetup is " + fd);
 
 		if (fd <= -1) {
-			System.out.println(" ==>> SPI SETUP FAILED");
-			throw new RuntimeException("ERROR!");
+			log("SPI Setup failed!");
+			throw new RuntimeException("SPI Setup failed!");
 		}
 		Gpio.pinMode(_cs, OUTPUT);
 
@@ -46,7 +44,7 @@ public class PN532Spi implements IPN532Interface {
 
 	@Override
 	public void wakeup() {
-		System.out.println("Waking SPI.");
+		log("Waking SPI.");
 		Gpio.digitalWrite(_cs, HIGH);
 		Gpio.digitalWrite(rst, HIGH);
 		Gpio.digitalWrite(_cs, LOW);
@@ -56,8 +54,11 @@ public class PN532Spi implements IPN532Interface {
 	public CommandStatus writeCommand(byte[] header, byte[] body)
 			throws InterruptedException {
 
-		System.out.println("Medium.writeCommand(" + getByteString(header) + " "
-				+ (body != null ? body : "") + ")");
+		log("Medium.writeCommand(" + getByteString(header) + " "
+				+ (body != null ? getByteString(body) : "") + ")");
+		
+		command = header[0];
+		
 		byte checksum;
 		byte cmdlen_1;
 		byte i;
@@ -68,20 +69,20 @@ public class PN532Spi implements IPN532Interface {
 		cmd_len++;
 
 		Gpio.digitalWrite(_cs, LOW);
-		Gpio.delay(2); // or whatever the delay is for waking up the board
+		Gpio.delay(2); 
 
-		writeByte(PN532_SPI_DATAWRITE); // 0x01
+		writeByte(PN532_SPI_DATAWRITE); 
 
-		checksum = PN532_PREAMBLE + PN532_PREAMBLE + PN532_STARTCODE2;
-		writeByte(PN532_PREAMBLE); // 0x00
-		writeByte(PN532_PREAMBLE); // 0x00
-		writeByte(PN532_STARTCODE2); // 0xff
+		checksum = PN532_PREAMBLE + PN532_STARTCODE1 + PN532_STARTCODE2;
+		writeByte(PN532_PREAMBLE); 
+		writeByte(PN532_STARTCODE1); 
+		writeByte(PN532_STARTCODE2); 
 
-		writeByte(cmd_len); // 0x02
+		writeByte(cmd_len); 
 		cmdlen_1 = (byte) (~cmd_len + 1);
-		writeByte(cmdlen_1); // 0x01
+		writeByte(cmdlen_1); 
 
-		writeByte(PN532_HOSTTOPN532); // 0xd4
+		writeByte(PN532_HOSTTOPN532); 
 		checksum += PN532_HOSTTOPN532;
 
 		for (i = 0; i < cmd_len - 1; i++) {
@@ -106,21 +107,62 @@ public class PN532Spi implements IPN532Interface {
 	@Override
 	public int readResponse(byte[] buffer, int expectedLength, int timeout)
 			throws InterruptedException {
-		System.out.println("Medium.readResponse(..., " + expectedLength + ", "
+		log("Medium.readResponse(..., " + expectedLength + ", "
 				+ timeout + ")");
-		byte i;
 
 		Gpio.digitalWrite(_cs, LOW);
 		Gpio.delay(2);
 		writeByte(PN532_SPI_DATAREAD);
+		
+		if (PN532_PREAMBLE != readByte() || PN532_STARTCODE1 != readByte() || PN532_STARTCODE2 != readByte()) {
+      log("pn532i2c.readResponse bad starting bytes found");
+      return -1;
+    }
 
-		for (i = 0; i < expectedLength; i++) {
-			Gpio.delay(1);
-			buffer[i] = readByte();
-		}
+    byte length = readByte();
+    byte com_length = length;
+    com_length += readByte();
+    if (com_length != 0) {
+      log("pn532i2c.readResponse bad length checksum");
+      return -1;
+    }
+
+    byte cmd = 1;
+    cmd += command;
+
+    if (PN532_PN532TOHOST != readByte() || (cmd) != readByte()) {
+      log("pn532i2c.readResponse bad command check.");
+      return -1;
+    }
+
+    length -= 2;
+    if (length > expectedLength) {
+      log("pn532i2c.readResponse not enough space");
+      readByte();
+      readByte();
+      return -1;
+    }
+
+    byte sum = PN532_PN532TOHOST;
+    sum += cmd;
+
+    for (int i = 0; i < length; i++) {
+      buffer[i] = readByte();
+      sum += buffer[i];
+    }
+
+    byte checksum = readByte();
+    checksum += sum;
+    if (0 != checksum) {
+      log("pn532i2c.readResponse bad checksum");
+      return -1;
+    }
+    
+    readByte(); //POSTAMBLE
+    
 		Gpio.digitalWrite(_cs, HIGH);
 		
-		return 1;
+		return length;
 	}
 
 	@Override
@@ -130,7 +172,7 @@ public class PN532Spi implements IPN532Interface {
 	}
 
 	private CommandStatus waitForAck(int timeout) throws InterruptedException {
-		System.out.println("Medium.waitForAck()");
+		log("Medium.waitForAck()");
 
 		int timer = 0;
 		while (readSpiStatus() != PN532_SPI_READY) {
@@ -156,16 +198,16 @@ public class PN532Spi implements IPN532Interface {
 			}
 			Gpio.delay(10);
 		}
-		return CommandStatus.OK; // ack'd command
+		return CommandStatus.OK; 
 	}
-	
-	@Override
-	public int getOffsetBytes() {
-	  return 7;
-	}
+//	
+//	@Override
+//	public int getOffsetBytes() {
+//	  return 7;
+//	}
 
 	private byte readSpiStatus() throws InterruptedException {
-		// System.out.println("Medium.readSpiStatus()");
+		log("Medium.readSpiStatus()");
 		byte status;
 
 		Gpio.digitalWrite(_cs, LOW);
@@ -176,8 +218,8 @@ public class PN532Spi implements IPN532Interface {
 		return status;
 	}
 
-	boolean checkSpiAck() throws InterruptedException {
-		System.out.println("Medium.checkSpiAck()");
+	private boolean checkSpiAck() throws InterruptedException {
+		log("Medium.checkSpiAck()");
 		byte ackbuff[] = new byte[6];
 		byte PN532_ACK[] = new byte[] { 0, 0, (byte) 0xFF, 0, (byte) 0xFF, 0 };
 
@@ -190,7 +232,7 @@ public class PN532Spi implements IPN532Interface {
 		return true;
 	}
 
-	void writeByte(byte byteToWrite) {
+	private void writeByte(byte byteToWrite) {
 		// System.out.println("Medium.write(" + Integer.toHexString(_data) +
 		// ")");
 		byte[] dataToSend = new byte[1];
@@ -198,7 +240,8 @@ public class PN532Spi implements IPN532Interface {
 		Spi.wiringPiSPIDataRW(SPICHANNEL, dataToSend, 1);
 	}
 
-	byte readByte() {
+	private byte readByte() {
+	  Gpio.delay(1);
 		byte[] data = new byte[1];
 		data[0] = 0;
 		Spi.wiringPiSPIDataRW(SPICHANNEL, data, 1);
@@ -216,7 +259,7 @@ public class PN532Spi implements IPN532Interface {
 		return output.trim() + "]";
 	}
 
-	byte reverseByte(byte inputByte) {
+	private byte reverseByte(byte inputByte) {
 	  byte input = inputByte;
 		byte output = 0;
 		for (int p = 0; p < 8; p++) {
@@ -227,6 +270,12 @@ public class PN532Spi implements IPN532Interface {
 		}
 		return output;
 	}
+	
+	private void log(String message) {
+    if (debug) {
+      System.out.println(message);
+    }
+  }
 	
 
 }

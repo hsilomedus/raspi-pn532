@@ -12,20 +12,12 @@ import com.pi4j.wiringpi.Gpio;
 
 public class PN532I2C implements IPN532Interface {
 
-  static final byte PN532_PREAMBLE = 0x00;
-  static final byte PN532_STARTCODE1 = 0x00;
-  static final byte PN532_STARTCODE2 = (byte) 0xFF;
-  static final byte PN532_POSTAMBLE = 0x00;
-
-  static final byte PN532_HOSTTOPN532 = (byte) 0xD4;
-  static final byte PN532_PN532TOHOST = (byte) 0xD5;
-
-  I2CBus i2cBus;
-  I2CDevice i2cDevice;
+  private I2CBus i2cBus;
+  private I2CDevice i2cDevice;
   boolean debug = false;
   boolean debugReads = false;
 
-  byte command;
+  private byte command;
 
   private static final int DEVICE_ADDRESS = 0x24;
 
@@ -33,10 +25,10 @@ public class PN532I2C implements IPN532Interface {
   public void begin() {
     try {
       i2cBus = I2CFactory.getInstance(I2CBus.BUS_1);
-      System.out.println("Connected to bus OK!!!");
+      log("Connected to bus OK!!!");
 
       i2cDevice = i2cBus.getDevice(DEVICE_ADDRESS);
-      System.out.println("Connected to device OK!!!");
+      log("Connected to device OK!!!");
 
       Thread.sleep(500);
 
@@ -55,10 +47,7 @@ public class PN532I2C implements IPN532Interface {
 
   @Override
   public CommandStatus writeCommand(byte[] header, byte[] body) throws InterruptedException {
-    if (debug) {
-      System.out.println("pn532i2c.writeCommand(header:" + getByteString(header) + ", body: " + getByteString(body)
-          + ")");
-    }
+    log("pn532i2c.writeCommand(header:" + getByteString(header) + ", body: " + getByteString(body) + ")");
 
     List<Byte> toSend = new ArrayList<Byte>();
 
@@ -97,24 +86,20 @@ public class PN532I2C implements IPN532Interface {
       for (int i = 0; i < bytesToSend.length; i++) {
         bytesToSend[i] = toSend.get(i);
       }
-      if (debug) {
-        System.out.println("pn532i2c.writeCommand sending " + getByteString(bytesToSend));
-      }
+      log("pn532i2c.writeCommand sending " + getByteString(bytesToSend));
       i2cDevice.write(DEVICE_ADDRESS, bytesToSend, 0, bytesToSend.length);
 
     } catch (IOException e) {
       System.out.println("pn532i2c.writeCommand exception occured: " + e.getMessage());
       return CommandStatus.INVALID_ACK;
     }
-    if (debug) {
-      System.out.println("pn532i2c.writeCommand transferring to waitForAck())");
-    }
+    log("pn532i2c.writeCommand transferring to waitForAck())");
     return waitForAck(5000);
 
   }
 
   private CommandStatus waitForAck(int timeout) throws InterruptedException {
-    System.out.println("pn532i2c.waitForAck()");
+    log("pn532i2c.waitForAck()");
 
     byte ackbuff[] = new byte[7];
     byte PN532_ACK[] = new byte[]{0, 0, (byte) 0xFF, 0, (byte) 0xFF, 0};
@@ -124,8 +109,8 @@ public class PN532I2C implements IPN532Interface {
     while (true) {
       try {
         int read = i2cDevice.read(ackbuff, 0, 7);
-        if (debug && debugReads && read > 0) {
-          System.out.println("pn532i2c.waitForAck Read " + read + " bytes.");
+        if (debugReads && read > 0) {
+          log("pn532i2c.waitForAck Read " + read + " bytes.");
         }
       } catch (IOException e) {
         message = e.getMessage();
@@ -138,9 +123,7 @@ public class PN532I2C implements IPN532Interface {
       if (timeout != 0) {
         timer += 10;
         if (timer > timeout) {
-          if (debug) {
-            System.out.println("pn532i2c.waitForAck timeout occured: " + message);
-          }
+          log("pn532i2c.waitForAck timeout occured: " + message);
           return CommandStatus.TIMEOUT;
         }
       }
@@ -150,15 +133,11 @@ public class PN532I2C implements IPN532Interface {
 
     for (int i = 1; i < ackbuff.length; i++) {
       if (ackbuff[i] != PN532_ACK[i - 1]) {
-        if (debug) {
-          System.out.println("pn532i2c.waitForAck Invalid Ack.");
-        }
+        log("pn532i2c.waitForAck Invalid Ack.");
         return CommandStatus.INVALID_ACK;
       }
     }
-    if (debug) {
-      System.out.println("pn532i2c.waitForAck OK");
-    }
+    log("pn532i2c.waitForAck OK");
     return CommandStatus.OK;
 
   }
@@ -170,9 +149,7 @@ public class PN532I2C implements IPN532Interface {
 
   @Override
   public int readResponse(byte[] buffer, int expectedLength, int timeout) throws InterruptedException {
-    if (debug) {
-      System.out.println("pn532i2c.readResponse");
-    }
+    log("pn532i2c.readResponse");
 
     byte response[] = new byte[expectedLength + 2];
 
@@ -181,8 +158,8 @@ public class PN532I2C implements IPN532Interface {
     while (true) {
       try {
         int read = i2cDevice.read(response, 0, expectedLength + 2);
-        if (debug && debugReads && read > 0) {
-          System.out.println("pn532i2c.waitForAck Read " + read + " bytes.");
+        if (debugReads && read > 0) {
+          log("pn532i2c.waitForAck Read " + read + " bytes.");
         }
       } catch (IOException e) {
         // Nothing, timeout will occur if an error has happened.
@@ -195,9 +172,7 @@ public class PN532I2C implements IPN532Interface {
       if (timeout != 0) {
         timer += 10;
         if (timer > timeout) {
-          if (debug) {
-            System.out.println("pn532i2c.readResponse timeout occured.");
-          }
+          log("pn532i2c.readResponse timeout occured.");
           return -1;
         }
       }
@@ -208,9 +183,7 @@ public class PN532I2C implements IPN532Interface {
     int ind = 1;
 
     if (PN532_PREAMBLE != response[ind++] || PN532_STARTCODE1 != response[ind++] || PN532_STARTCODE2 != response[ind++]) {
-      if (debug) {
-        System.out.println("pn532i2c.readResponse bad starting bytes found");
-      }
+      log("pn532i2c.readResponse bad starting bytes found");
       return -1;
     }
 
@@ -218,9 +191,7 @@ public class PN532I2C implements IPN532Interface {
     byte com_length = length;
     com_length += response[ind++];
     if (com_length != 0) {
-      if (debug) {
-        System.out.println("pn532i2c.readResponse bad length checksum");
-      }
+      log("pn532i2c.readResponse bad length checksum");
       return -1;
     }
 
@@ -228,17 +199,13 @@ public class PN532I2C implements IPN532Interface {
     cmd += command;
 
     if (PN532_PN532TOHOST != response[ind++] || (cmd) != response[ind++]) {
-      if (debug) {
-        System.out.println("pn532i2c.readResponse bad command check.");
-      }
+      log("pn532i2c.readResponse bad command check.");
       return -1;
     }
 
     length -= 2;
     if (length > expectedLength) {
-      if (debug) {
-        System.out.println("pn532i2c.readResponse not enough space");
-      }
+      log("pn532i2c.readResponse not enough space");
       return -1;
     }
 
@@ -253,13 +220,11 @@ public class PN532I2C implements IPN532Interface {
     byte checksum = response[ind++];
     checksum += sum;
     if (0 != checksum) {
-      if (debug) {
-        System.out.println("pn532i2c.readResponse bad checksum");
-      }
+      log("pn532i2c.readResponse bad checksum");
       return -1;
     }
 
-    return 1;
+    return length;
 
   }
 
@@ -268,10 +233,6 @@ public class PN532I2C implements IPN532Interface {
     return readResponse(buffer, expectedLength, 1000);
   }
 
-  @Override
-  public int getOffsetBytes() {
-    return 0;
-  }
 
   private String getByteString(byte[] arr) {
     String output = "[";
@@ -282,6 +243,12 @@ public class PN532I2C implements IPN532Interface {
       }
     }
     return output.trim() + "]";
+  }
+  
+  private void log(String message) {
+    if (debug) {
+      System.out.println(message);
+    }
   }
 
 }

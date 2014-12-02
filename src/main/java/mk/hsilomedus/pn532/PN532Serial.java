@@ -5,14 +5,6 @@ import com.pi4j.io.serial.SerialFactory;
 @Deprecated
 public class PN532Serial implements IPN532Interface {
 
-	final static byte PN532_PREAMBLE = (byte) 0x00;
-	final static byte PN532_STARTCODE1 = (byte) 0x00;
-	final static byte PN532_STARTCODE2 = (byte) 0xFF;
-	final static byte PN532_POSTAMBLE = (byte) 0x00;
-
-	final static byte PN532_HOSTTOPN532 = (byte) 0xD4;
-	final static byte PN532_PN532TOHOST = (byte) 0xD5;
-
 	final static int PN532_ACK_WAIT_TIME = 10; // ms, timeout of waiting for ACK
 
 	final static int PN532_INVALID_ACK = -1;
@@ -250,11 +242,6 @@ public class PN532Serial implements IPN532Interface {
 
 	int receive(byte[] buffer, int expectedLength) throws InterruptedException {
 		return receive(buffer, expectedLength, 2000);
-	}
-	
-	@Override
-	public int getOffsetBytes() {
-	  return 7; //Don't know if valid
 	}
 
 }

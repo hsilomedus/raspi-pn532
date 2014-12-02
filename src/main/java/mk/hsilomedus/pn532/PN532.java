@@ -31,11 +31,11 @@ public class PN532 {
 
 		// read data packet
 		int status = medium.readResponse(pn532_packetbuffer, 12);
-		if (0 > status) {
+		if (status < 0) {
 			return 0;
 		}
 		
-		int offset = medium.getOffsetBytes();
+		int offset = 0; //medium.getOffsetBytes();
 
 		response = pn532_packetbuffer[offset + 0];
 		response <<= 8;
@@ -59,7 +59,7 @@ public class PN532 {
 			return false;
 		}
 
-		return 0 < medium.readResponse(pn532_packetbuffer, 8);
+		return medium.readResponse(pn532_packetbuffer, 8) > 0;
 	}
 
 	public int readPassiveTargetID(byte cardbaudrate, byte[] buffer) throws InterruptedException {
@@ -88,7 +88,7 @@ public class PN532 {
 		 * NFCID Length b6..NFCIDLen NFCID
 		 */
 		
-		int offset = medium.getOffsetBytes();
+		int offset = 0; //medium.getOffsetBytes();
 
 		if (pn532_packetbuffer[offset + 0] != 1) {
 			return -1;
